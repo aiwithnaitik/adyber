@@ -22,11 +22,7 @@ export class ExpandLineSelectionAction extends EditorAction {
 			id: 'expandLineSelection',
 			label: nls.localize2('expandLineSelection', "Expand Line Selection"),
 			precondition: undefined,
-			kbOpts: {
-				weight: KeybindingWeight.EditorCore,
-				kbExpr: EditorContextKeys.textInputFocus,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyL
-			},
+			kbOpts: undefined,
 		});
 	}
 

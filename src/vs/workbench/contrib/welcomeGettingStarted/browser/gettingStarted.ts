@@ -1834,22 +1834,14 @@ export class GettingStartedPage extends EditorPane {
 
 export class GettingStartedInputSerializer implements IEditorSerializer {
 	public canSerialize(editorInput: GettingStartedInput): boolean {
-		return true;
+		return false;
 	}
 
-	public serialize(editorInput: GettingStartedInput): string {
-		return JSON.stringify({ selectedCategory: editorInput.selectedCategory, selectedStep: editorInput.selectedStep });
+	public serialize(editorInput: GettingStartedInput): string | undefined {
+		return undefined;
 	}
 
-	public deserialize(instantiationService: IInstantiationService, serializedEditorInput: string): GettingStartedInput {
-
-		return instantiationService.invokeFunction(accessor => {
-			try {
-				const { selectedCategory, selectedStep } = JSON.parse(serializedEditorInput);
-				return new GettingStartedInput({ selectedCategory, selectedStep });
-			} catch { }
-			return new GettingStartedInput({});
-
-		});
+	public deserialize(instantiationService: IInstantiationService, serializedEditorInput: string): GettingStartedInput | undefined {
+		return undefined;
 	}
 }

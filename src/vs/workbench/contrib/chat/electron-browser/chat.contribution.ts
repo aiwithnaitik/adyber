@@ -218,9 +218,9 @@ class ChatLifecycleHandler extends Disposable {
 }
 
 registerAction2(OpenWorkspaceInAgentsWindowAction);
-registerAction2(OpenWorkspaceInAgentsWindowChatTitleAction);
-registerAction2(OpenWorkspaceInAgentsWindowTitleBarAction);
-registerAction2(ToggleOpenInAgentsWindowTitleBarAction);
+// Open in Agents titlebar action removed per user request
+// registerAction2(OpenWorkspaceInAgentsWindowTitleBarAction);
+// registerAction2(ToggleOpenInAgentsWindowTitleBarAction);
 registerAction2(OpenAgentsWindowAction);
 registerAction2(OpenChatSessionInAgentsWindowAction);
 if (!product.quality) {

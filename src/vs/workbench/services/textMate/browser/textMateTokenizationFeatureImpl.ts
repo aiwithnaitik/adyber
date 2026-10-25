@@ -411,7 +411,7 @@ export class TextMateTokenizationFeature extends Disposable implements ITextMate
 			const response = await fetch(this._environmentService.isBuilt
 				? FileAccess.asBrowserUri(`${nodeModulesAsarUnpackedPath}/vscode-oniguruma/release/onig.wasm`).toString(true)
 				: FileAccess.asBrowserUri(`${nodeModulesPath}/vscode-oniguruma/release/onig.wasm`).toString(true));
-			return response;
+			return await response.arrayBuffer();
 		}
 	}
 

@@ -111,9 +111,8 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 	}
 
 	private async run() {
-
-		// Wait for resolving startup editor until we are restored to reduce startup pressure
-		await this.lifecycleService.when(LifecyclePhase.Restored);
+		// Permanently disabled in Adyber IDE
+		return;
 
 		if (AuxiliaryBarMaximizedContext.getValue(this.contextKeyService)) {
 			// If the auxiliary bar is maximized, we do not show the welcome page.
@@ -234,55 +233,10 @@ export class StartupPageRunnerContribution extends Disposable implements IWorkbe
 	}
 
 	private tryShowOnboarding(): void {
-		if (this.environmentService.skipWelcome) {
-			return; // skip welcome flag is set
-		}
-
-		if (isWeb) {
-			return; // not supported on web (e.g. codespaces, github.dev)
-		}
-
-		if (!this.configurationService.getValue<boolean>('workbench.welcomePage.experimentalOnboarding')) {
-			return; // experimental onboarding is disabled
-		}
-
-		if (this.chatEntitlementService.sentiment.hidden) {
-			return; // AI features are hidden, do not show AI-focused onboarding
-		}
-
-		if (!this.storageService.isNew(StorageScope.APPLICATION)) {
-			return; // only show onboarding for new users who have never used the product before
-		}
-
-		if (this.storageService.getBoolean(ONBOARDING_STORAGE_KEY, StorageScope.APPLICATION)) {
-			return; // onboarding already completed
-		}
-
-		// Show the onboarding overlay on top of the welcome page
-		this.onboardingService.show();
-
-		// Mark onboarding as completed when dismissed
-		this._register(this.onboardingService.onDidDismiss(() => {
-			this.storageService.store(ONBOARDING_STORAGE_KEY, true, StorageScope.APPLICATION, StorageTarget.USER);
-		}));
+		return;
 	}
 }
 
 function isStartupPageEnabled(configurationService: IConfigurationService, contextService: IWorkspaceContextService, environmentService: IWorkbenchEnvironmentService) {
-	if (environmentService.skipWelcome) {
-		return false;
-	}
-
-	const startupEditor = configurationService.inspect<string>(configurationKey);
-	if (!startupEditor.userValue && !startupEditor.workspaceValue) {
-		const welcomeEnabled = configurationService.inspect(oldConfigurationKey);
-		if (welcomeEnabled.value !== undefined && welcomeEnabled.value !== null) {
-			return welcomeEnabled.value;
-		}
-	}
-
-	return startupEditor.value === 'welcomePage'
-		|| startupEditor.value === 'readme'
-		|| (contextService.getWorkbenchState() === WorkbenchState.EMPTY && startupEditor.value === 'welcomePageInEmptyWorkbench')
-		|| startupEditor.value === 'terminal';
+	return false;
 }

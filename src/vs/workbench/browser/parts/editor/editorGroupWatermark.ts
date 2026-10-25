@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { $, append, clearNode, h } from '../../../../base/browser/dom.js';
+import { $, addDisposableListener, append, clearNode, h } from '../../../../base/browser/dom.js';
 import { ActionBar, ActionsOrientation } from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { BaseActionViewItem } from '../../../../base/browser/ui/actionbar/actionViewItems.js';
 import { renderIcon } from '../../../../base/browser/ui/iconLabel/iconLabels.js';
@@ -42,6 +42,11 @@ interface WatermarkEntry {
 }
 
 const showChatContextKey = ContextKeyExpr.and(ContextKeyExpr.equals('chatSetupHidden', false), ContextKeyExpr.equals('chatSetupDisabledInWorkspace', false));
+
+const codeWithAgent: WatermarkEntry = {
+	text: localize('watermark.codeWithAgent', "Code with Agent"), id: 'workbench.action.chat.open',
+	icon: registerIcon('watermark-agent-chat', Codicon.sparkle, localize('watermark.agentChatIcon', "Icon for Code with Agent in the editor watermark."))
+};
 
 const openChat: WatermarkEntry = {
 	text: localize('watermark.openChat', "Open Chat"), id: 'workbench.action.chat.open',
@@ -135,6 +140,8 @@ export class EditorGroupWatermark extends Disposable {
 	private enabled = false;
 	private workbenchState: WorkbenchState;
 
+	private readonly emptyWindowActions: HTMLElement;
+
 	constructor(
 		container: HTMLElement,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
@@ -156,13 +163,40 @@ export class EditorGroupWatermark extends Disposable {
 			h('.editor-group-watermark', [
 				h('.watermark-container', [
 					h('.letterpress'),
+					h('.watermark-title@watermarkTitle'),
+					h('.watermark-actions.empty-window-actions@emptyWindowActions', [
+						h('button.watermark-action-button.watermark-open-folder@openFolderBtn', [
+							h('span.watermark-action-icon@openFolderIcon'),
+							h('span.watermark-action-text', ['Open Folder'])
+						]),
+						h('button.watermark-action-button.watermark-clone-repo@cloneRepoBtn', [
+							h('span.watermark-action-icon@cloneRepoIcon'),
+							h('span.watermark-action-text', ['Clone Repository'])
+						])
+					]),
 					h('.shortcuts@shortcuts'),
 				])
 			])
 		]);
 
 		append(container, elements.root);
+		elements.watermarkTitle.textContent = 'Adyber IDE';
+		this.emptyWindowActions = elements.emptyWindowActions;
 		this.shortcuts = elements.shortcuts;
+
+		const openFolderCommandId = isMacintosh && !isWeb ? 'workbench.action.files.openFileFolder' : 'workbench.action.files.openFolder';
+		this._register(addDisposableListener(elements.openFolderBtn, 'click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.commandService.executeCommand(openFolderCommandId);
+		}));
+
+		this._register(addDisposableListener(elements.cloneRepoBtn, 'click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.commandService.executeCommand('git.clone');
+		}));
+
 		this.toolbarContainer = elements.toolbarContainer;
 
 		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this.toolbarContainer, MenuId.EditorGroupWatermarkToolbar, {
@@ -208,22 +242,28 @@ export class EditorGroupWatermark extends Disposable {
 		}));
 	}
 
+	private updateActionVisibility(): void {
+		const isWorkspaceOpen = this.workbenchState !== WorkbenchState.EMPTY;
+		if (this.emptyWindowActions) {
+			this.emptyWindowActions.style.display = isWorkspaceOpen ? 'none' : 'flex';
+		}
+		if (this.shortcuts) {
+			this.shortcuts.style.display = isWorkspaceOpen ? 'flex' : 'none';
+		}
+	}
+
 	private render(): void {
 		this.enabled = this.configurationService.getValue<boolean>(EditorGroupWatermark.SETTINGS_KEY);
+
+		this.updateActionVisibility();
 
 		clearNode(this.shortcuts);
 		this.transientDisposables.clear();
 		this.shortcutDisposables.clear();
 
-		if (!this.enabled) {
+		const isWorkspaceOpen = this.workbenchState !== WorkbenchState.EMPTY;
+		if (!isWorkspaceOpen) {
 			return;
-		}
-
-		const entries = this.filterEntries(this.workbenchState !== WorkbenchState.EMPTY ? workspaceEntries : emptyWindowEntries);
-		if (entries.length < EditorGroupWatermark.MINIMUM_ENTRIES) {
-			const additionalEntries = this.filterEntries(otherEntries);
-			shuffle(additionalEntries);
-			entries.push(...additionalEntries.slice(0, EditorGroupWatermark.MINIMUM_ENTRIES - entries.length));
 		}
 
 		const box = append(this.shortcuts, $('.watermark-box'));
@@ -232,20 +272,13 @@ export class EditorGroupWatermark extends Disposable {
 			clearNode(box);
 			this.shortcutDisposables.clear();
 
-			const shortcuts = new Map<string, { entry: WatermarkEntry; keybinding: ResolvedKeybinding }>();
-			for (const entry of entries) {
-				const keybinding = this.keybindingService.lookupKeybinding(entry.id);
-				if (keybinding) {
-					shortcuts.set(entry.id, { entry, keybinding });
-				}
-			}
+			const keybinding = this.keybindingService.lookupKeybinding(codeWithAgent.id);
 
 			const actionBar = this.shortcutDisposables.add(new ActionBar(box, {
 				orientation: ActionsOrientation.VERTICAL,
 				ariaLabel: localize('watermark.shortcuts', "Editor Shortcuts"),
 				actionViewItemProvider: action => {
-					const shortcut = shortcuts.get(action.id);
-					return shortcut ? this.instantiationService.createInstance(WatermarkActionViewItem, action, shortcut.entry.icon, shortcut.keybinding) : undefined;
+					return this.instantiationService.createInstance(WatermarkActionViewItem, action, codeWithAgent.icon, keybinding);
 				},
 			}));
 			this.shortcutDisposables.add(actionBar.onDidRun(e => {
@@ -254,9 +287,7 @@ export class EditorGroupWatermark extends Disposable {
 				}
 			}));
 
-			for (const { entry } of shortcuts.values()) {
-				actionBar.push(this.shortcutDisposables.add(new Action(entry.id, entry.text, undefined, true, () => this.commandService.executeCommand(entry.id))));
-			}
+			actionBar.push(this.shortcutDisposables.add(new Action(codeWithAgent.id, codeWithAgent.text, undefined, true, () => this.commandService.executeCommand(codeWithAgent.id))));
 		};
 
 		update();
@@ -285,7 +316,7 @@ class WatermarkActionViewItem extends BaseActionViewItem {
 	constructor(
 		action: IAction,
 		private readonly icon: ThemeIcon,
-		private readonly keybinding: ResolvedKeybinding,
+		private readonly keybinding: ResolvedKeybinding | undefined,
 		@IHoverService private readonly hoverService: IHoverService,
 	) {
 		super(undefined, action);
@@ -295,13 +326,17 @@ class WatermarkActionViewItem extends BaseActionViewItem {
 		const row = append(container, $('a.action-label.watermark-entry'));
 		super.render(row);
 		row.setAttribute('role', 'button');
-		row.setAttribute('aria-label', localize('watermark.shortcutAriaLabel', "{0} ({1})", this._action.label, this.keybinding.getAriaLabel()));
+		if (this.keybinding) {
+			row.setAttribute('aria-label', localize('watermark.shortcutAriaLabel', "{0} ({1})", this._action.label, this.keybinding.getAriaLabel()));
+		}
 
 		const icon = append(row, renderIcon(this.icon));
 		icon.classList.add('watermark-icon');
 		icon.setAttribute('aria-hidden', 'true');
 		append(row, $('span.watermark-label')).textContent = this._action.label;
-		this._register(new KeybindingLabel(append(row, $('span.watermark-keybinding')), OS, defaultKeybindingLabelStyles)).set(this.keybinding);
+		if (this.keybinding) {
+			this._register(new KeybindingLabel(append(row, $('span.watermark-keybinding')), OS, defaultKeybindingLabelStyles)).set(this.keybinding);
+		}
 		this._register(this.hoverService.setupDelayedHover(row, { content: this._action.label }));
 	}
 }

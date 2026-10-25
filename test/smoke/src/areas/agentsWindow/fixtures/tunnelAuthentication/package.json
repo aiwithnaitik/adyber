@@ -10,7 +10,6 @@
 	},
 	"main": "./extension.js",
 	"extensionKind": ["ui"],
-	"activationEvents": ["onAuthenticationRequest:github"],
 	"contributes": {
 		"authentication": [{
 			"id": "github",

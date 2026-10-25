@@ -160,6 +160,9 @@ export class ProtocolMainService extends Disposable implements IProtocolMainServ
 					response.headers.set(name, value);
 				}
 			}
+			if (extname(path).toLowerCase() === '.wasm') {
+				response.headers.set('content-type', 'application/wasm');
+			}
 
 			return response;
 		} catch (error) {

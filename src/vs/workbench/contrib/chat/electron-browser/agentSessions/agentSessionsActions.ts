@@ -214,15 +214,7 @@ export class OpenWorkspaceInAgentsWindowTitleBarAction extends Action2 {
 			id: OPEN_WORKSPACE_IN_AGENTS_WINDOW_TITLE_BAR_COMMAND_ID,
 			title: OPEN_WORKSPACE_IN_AGENTS_WINDOW_TITLE,
 			precondition: OPEN_AGENTS_WINDOW_PRECONDITION,
-			f1: false,
-			menu: {
-				id: MenuId.TitleBarAdjacentCenter,
-				order: -1000,
-				when: ContextKeyExpr.and(
-					OPEN_AGENTS_WINDOW_PRECONDITION,
-					ContextKeyExpr.notEquals(`config.${ChatConfiguration.TitleBarOpenInAgentsWindowEnabled}`, false),
-				),
-			},
+			f1: false
 		});
 	}
 

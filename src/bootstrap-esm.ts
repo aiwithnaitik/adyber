@@ -253,7 +253,8 @@ async function doSetupNLS(): Promise<INLSConfiguration | undefined> {
 	}
 
 	try {
-		globalThis._VSCODE_NLS_MESSAGES = JSON.parse((await fs.promises.readFile(messagesFile)).toString());
+		const rawMessages = (await fs.promises.readFile(messagesFile)).toString();
+		globalThis._VSCODE_NLS_MESSAGES = JSON.parse(rawMessages.charCodeAt(0) === 0xFEFF ? rawMessages.slice(1) : rawMessages);
 	} catch (error) {
 		console.error(`Error reading NLS messages file ${messagesFile}: ${error}`);
 
@@ -269,7 +270,8 @@ async function doSetupNLS(): Promise<INLSConfiguration | undefined> {
 		// Fallback to the default message file to ensure english translation at least
 		if (nlsConfig?.defaultMessagesFile && nlsConfig.defaultMessagesFile !== messagesFile) {
 			try {
-				globalThis._VSCODE_NLS_MESSAGES = JSON.parse((await fs.promises.readFile(nlsConfig.defaultMessagesFile)).toString());
+				const rawDefault = (await fs.promises.readFile(nlsConfig.defaultMessagesFile)).toString();
+				globalThis._VSCODE_NLS_MESSAGES = JSON.parse(rawDefault.charCodeAt(0) === 0xFEFF ? rawDefault.slice(1) : rawDefault);
 			} catch (error) {
 				console.error(`Error reading default NLS messages file ${nlsConfig.defaultMessagesFile}: ${error}`);
 			}
